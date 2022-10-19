@@ -35,7 +35,7 @@ import { Imovements } from '../utils/DbInterface';
 import { Column } from '../utils/Interface';
 
 const columns: Column = [
-  { id: 'id', label: 'Id', minWidth: 170, align: 'left' },
+  /* { id: 'id', label: 'Id', minWidth: 170, align: 'left' }, */
   { id: 'value', label: 'Valore', minWidth: 170, align: 'left' },
   {
     id: 'date',
@@ -280,8 +280,10 @@ const Movements = () => {
                             align={column.align}
                             style={{
                               color:
-                                column.id === 'value' && value < 0
-                                  ? 'red'
+                                column.id === 'value'
+                                  ? value < 0
+                                    ? 'red'
+                                    : 'green'
                                   : 'black',
                               minWidth: column.minWidth,
                             }}

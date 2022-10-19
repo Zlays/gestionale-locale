@@ -29,7 +29,7 @@ import { modalStyle } from '../utils/style';
 import { Iproject } from '../utils/DbInterface';
 
 const columns: Column = [
-  { id: 'id', label: 'Id', minWidth: 170, align: 'left' },
+  /*  { id: 'id', label: 'Id', minWidth: 170, align: 'left' }, */
   { id: 'name', label: 'Nome', minWidth: 170, align: 'left' },
   { id: 'total', label: 'Totale', minWidth: 170, align: 'left' },
   {
@@ -263,8 +263,10 @@ const Project = () => {
                             align={column.align}
                             style={{
                               color:
-                                column.id === 'total' && value < 0
-                                  ? 'red'
+                                column.id === 'total'
+                                  ? value < 0
+                                    ? 'red'
+                                    : 'green'
                                   : 'black',
                               minWidth: column.minWidth,
                             }}
