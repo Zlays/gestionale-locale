@@ -1,12 +1,12 @@
 {
-  "name": "electron-react-boilerplate",
-  "version": "1.0.1",
-  "description": "A foundation for scalable desktop apps",
+  "name": "Gestionale",
+  "version": "1.0.2",
+  "description": "",
   "license": "MIT",
   "author": {
-    "name": "Electron React Boilerplate Maintainers",
-    "email": "electronreactboilerplate@gmail.com",
-    "url": "https://github.com/electron-react-boilerplate"
+    "name": "Mirko Buccella",
+    "email": "mirkobuccella@gmail.com",
+    "url": "https://github.com/Zlays"
   },
   "main": "./dist/main/main.js",
   "scripts": {

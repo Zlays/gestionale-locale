@@ -12,8 +12,10 @@ import path from 'path';
 import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
+import fs from 'fs';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+const { name, version } = require('../../release/app/package.json');
 
 class AppUpdater {
   constructor() {
@@ -29,13 +31,13 @@ const RESOURCES_PATH = app.isPackaged
   ? path.join(process.resourcesPath, 'assets')
   : path.join(__dirname, '../../assets');
 
+const DB_EMPTY_PATH = `${RESOURCES_PATH}/dbEmpty.sqlite3`;
+
 const DB_PATH = app.isPackaged
   ? `${RESOURCES_PATH}/db.sqlite3`
   : `${RESOURCES_PATH}/dbDebug.sqlite3`;
 
-const database = new sqlite3.Database(DB_PATH, (err) => {
-  if (err) console.error('Database opening error: ', err);
-});
+let database;
 
 ipcMain.on('asynchronous-message', (event, arg) => {
   const sql = arg;
@@ -77,7 +79,22 @@ const installExtensions = async () => {
     .catch(console.log);
 };
 
+function initDB() {
+  // Create db if not exist
+  if (!fs.existsSync(DB_PATH)) {
+    fs.copyFile(DB_EMPTY_PATH, DB_PATH, (err) => {
+      if (err) throw err;
+    });
+  }
+
+  // init db
+  database = new sqlite3.Database(DB_PATH, (err) => {
+    if (err) console.error('Database opening error: ', err);
+  });
+}
+
 const createWindow = async () => {
+  initDB();
   if (isDebug) {
     await installExtensions();
   }
@@ -90,6 +107,7 @@ const createWindow = async () => {
   const { width, height } = primaryDisplay.workAreaSize;
 
   mainWindow = new BrowserWindow({
+    title: `${name} - ${version}`,
     show: false,
     width,
     height,
@@ -113,6 +131,10 @@ const createWindow = async () => {
     } else {
       mainWindow.show();
     }
+  });
+
+  mainWindow.on('page-title-updated', function (e) {
+    e.preventDefault();
   });
 
   mainWindow.on('closed', () => {
