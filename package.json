@@ -225,7 +225,11 @@
       ]
     },
     "win": {
-      "publish": ["github"],
+      "publish": [{
+        "provider": "github",
+        "owner": "Zlays",
+        "repo": "gestionale-locale"
+      }],
       "target": [
         "nsis"
       ]
