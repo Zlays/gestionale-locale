@@ -23,7 +23,7 @@ import {
   editProject,
   getAllProjects,
   removeProject,
-} from '../services/DatabaseService';
+} from '../services/ReactDatabaseService';
 import { Column } from '../utils/Interface';
 import { modalStyle } from '../utils/style';
 import { Iproject } from '../utils/DbInterface';
@@ -31,7 +31,18 @@ import { Iproject } from '../utils/DbInterface';
 const columns: Column = [
   /*  { id: 'id', label: 'Id', minWidth: 170, align: 'left' }, */
   { id: 'name', label: 'Nome', minWidth: 170, align: 'left' },
-  { id: 'total', label: 'Totale', minWidth: 170, align: 'left' },
+  {
+    id: 'nominative_value',
+    label: 'Valore nominale',
+    minWidth: 170,
+    align: 'left',
+  },
+  {
+    id: 'current_value',
+    label: 'Valore corrente',
+    minWidth: 170,
+    align: 'left',
+  },
   {
     id: 'date',
     label: 'Date',
@@ -44,13 +55,15 @@ const columns: Column = [
 
 const Project = () => {
   const [name, setName] = React.useState<string>('');
+  const [nominalValue, setNominalValue] = React.useState<number>(0);
   const [date, setDate] = React.useState<Dayjs | null>(dayjs(new Date()));
 
   const [refresh, setRefresh] = React.useState<number>(0);
   const [error, setError] = React.useState<Error | null>();
 
-  const [data, setData] = useState([]);
-  const [total, setTotal] = React.useState<number>(0);
+  const [data, setData] = useState<Iproject[]>([]);
+  const [nominativeTotal, setNominativeTotal] = React.useState<number>(0);
+  const [currentTotal, setCurrentTotal] = React.useState<number>(0);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
@@ -77,10 +90,16 @@ const Project = () => {
   }, [refresh]);
 
   useEffect(() => {
-    const total = data.reduce((accumulator, object: Iproject) => {
-      return accumulator + object.total;
-    }, 0);
-    setTotal(total);
+    setCurrentTotal(
+      data.reduce((accumulator, object: Iproject) => {
+        return accumulator + object.current_value;
+      }, 0)
+    );
+    setNominativeTotal(
+      data.reduce((accumulator, object: Iproject) => {
+        return accumulator + object.nominative_value;
+      }, 0)
+    );
   }, [data]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -120,12 +139,13 @@ const Project = () => {
     });
   }
 
-  function addGrouphandler() {
-    addProject(name, date.toString())
+  function addProjectHandler() {
+    addProject(name, nominalValue, date.toString())
       .then(() => {
         setRefresh(refresh + 1);
         setDate(dayjs(new Date()));
         setName('');
+        setNominalValue(0);
       })
       .catch((err) => {
         console.log(`error ${err}`);
@@ -161,6 +181,18 @@ const Project = () => {
     setModalOpen(false);
   }
 
+  function handleValueChange(event) {
+    setNominalValue(event.target.value);
+  }
+
+  function handleEditValueChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setToEdit((prevState: Iproject) => {
+      return {
+        ...prevState,
+        value: event.target.value,
+      };
+    });
+  }
   return (
     <>
       <Grid
@@ -180,6 +212,18 @@ const Project = () => {
             onChange={handleNameChange}
             multiline
           />
+          <TextField
+            id="value"
+            label="Valore"
+            value={nominalValue}
+            onChange={handleValueChange}
+            placeholder="Valore"
+            inputProps={{
+              inputMode: 'numeric',
+              pattern: '/^-?d+(?:.d+)?$/g',
+            }}
+            type="number"
+          />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DesktopDatePicker
               label="Data"
@@ -189,14 +233,20 @@ const Project = () => {
               renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
-          <IconButton aria-label="add" size="large" onClick={addGrouphandler}>
+          <IconButton aria-label="add" size="large" onClick={addProjectHandler}>
             <AddIcon fontSize="inherit" />
           </IconButton>
         </Grid>
         <Grid item xs={4} md={4}>
           <Chip
-            color={total >= 0 ? 'success' : 'error'}
-            label={`Totale: ${total} €`}
+            color={
+              currentTotal < 0
+                ? 'error'
+                : nominativeTotal <= currentTotal
+                ? 'success'
+                : 'warning'
+            }
+            label={`${nominativeTotal} / ${currentTotal} €`}
             style={{ right: 0 }}
           />
         </Grid>
@@ -227,7 +277,9 @@ const Project = () => {
                         if (column.id === 'actions') {
                           return (
                             <TableCell key={column.id} align={column.align}>
-                              <Link to={`/movement/${row.id}`}>
+                              <Link
+                                to={`/movement/${row.id}/${row.nominative_value}`}
+                              >
                                 <IconButton
                                   aria-label="view"
                                   size="large"
@@ -263,15 +315,18 @@ const Project = () => {
                             align={column.align}
                             style={{
                               color:
-                                column.id === 'total'
-                                  ? value < 0
+                                column.id === 'current_value'
+                                  ? value < row.nominative_value
                                     ? 'red'
                                     : 'green'
                                   : 'black',
                               minWidth: column.minWidth,
                             }}
                           >
-                            {column.id === 'total' ? `${value} €` : value}
+                            {column.id === 'current_value' ||
+                            column.id === 'nominative_value'
+                              ? `${value} €`
+                              : value}
                           </TableCell>
                         );
                       })}
@@ -305,6 +360,18 @@ const Project = () => {
             value={toEdit?.name}
             onChange={handleEditNameChange}
             multiline
+          />
+          <TextField
+            id="value"
+            label="Valore"
+            value={data.nominative_value}
+            onChange={handleEditValueChange}
+            placeholder="Valore"
+            inputProps={{
+              inputMode: 'numeric',
+              pattern: '/^-?d+(?:.d+)?$/g',
+            }}
+            type="number"
           />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DesktopDatePicker
