@@ -22,7 +22,10 @@ export default function App() {
           <Main>
             <Routes>
               <Route path="/" element={<Project />} />
-              <Route path="/movement/:idProject" element={<Movements />} />
+              <Route
+                path="/movement/:idProject/:nominativeValue"
+                element={<Movements />}
+              />
             </Routes>
           </Main>
         </Grid>

@@ -12,9 +12,12 @@ import path from 'path';
 import { app, BrowserWindow, ipcMain, screen, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
 import log from 'electron-log';
-import fs from 'fs';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
+import runMigration from '../services/MigrationService';
+import { RESOURCES_PATH } from '../utils/Paths';
+import { dbClose } from '../services/DatabaseService';
+
 const { name, version } = require('../../release/app/package.json');
 
 class AppUpdater {
@@ -24,27 +27,6 @@ class AppUpdater {
     autoUpdater.checkForUpdatesAndNotify();
   }
 }
-
-const sqlite3 = require('sqlite3');
-
-const RESOURCES_PATH = app.isPackaged
-  ? path.join(process.resourcesPath, 'assets')
-  : path.join(__dirname, '../../assets');
-
-const DB_EMPTY_PATH = `${RESOURCES_PATH}/dbEmpty.sqlite3`;
-
-const DB_PATH = app.isPackaged
-  ? `${RESOURCES_PATH}/db.sqlite3`
-  : `${RESOURCES_PATH}/dbDebug.sqlite3`;
-
-let database;
-
-ipcMain.on('asynchronous-message', (event, arg) => {
-  const sql = arg;
-  database.all(sql, (err, rows) => {
-    event.reply('asynchronous-reply', (err && err.message) || rows);
-  });
-});
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -73,28 +55,14 @@ const installExtensions = async () => {
 
   return installer
     .default(
-      extensions.map((name) => installer[name]),
+      extensions.map((extensionName: string) => installer[extensionName]),
       forceDownload
     )
     .catch(console.log);
 };
 
-function initDB() {
-  // Create db if not exist
-  if (!fs.existsSync(DB_PATH)) {
-    fs.copyFile(DB_EMPTY_PATH, DB_PATH, (err) => {
-      if (err) throw err;
-    });
-  }
-
-  // init db
-  database = new sqlite3.Database(DB_PATH, (err) => {
-    if (err) console.error('Database opening error: ', err);
-  });
-}
-
 const createWindow = async () => {
-  initDB();
+  runMigration();
   if (isDebug) {
     await installExtensions();
   }
@@ -163,7 +131,7 @@ app.on('window-all-closed', () => {
   // Respect the OSX convention of having the application in memory even
   // after all windows have been closed
   if (process.platform !== 'darwin') {
-    database.close();
+    dbClose();
     app.quit();
   }
 });

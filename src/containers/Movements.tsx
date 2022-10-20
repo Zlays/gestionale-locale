@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box,
+  Chip,
+  Grid,
   IconButton,
   Modal,
   Stack,
@@ -30,8 +32,8 @@ import {
   editMovements,
   getMovementsByGroup,
   removeMovement,
-} from '../services/DatabaseService';
-import { Imovements } from '../utils/DbInterface';
+} from '../services/ReactDatabaseService';
+import { Imovements, Iproject } from '../utils/DbInterface';
 import { Column } from '../utils/Interface';
 
 const columns: Column = [
@@ -49,7 +51,7 @@ const columns: Column = [
 ];
 
 const Movements = () => {
-  const { idProject } = useParams();
+  const { idProject, nominativeValue } = useParams();
 
   const [value, setValue] = React.useState<number>(0);
   const [description, setDescription] = React.useState<string>('');
@@ -59,6 +61,7 @@ const Movements = () => {
   const [error, setError] = React.useState<Error | null>();
 
   const [movements, setMovements] = useState<Imovements[]>([]);
+  const [total, setTotal] = React.useState<number>(0);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
@@ -88,6 +91,14 @@ const Movements = () => {
       })
       .catch((err: Error | null) => setError(err));
   }, [refresh]);
+
+  useEffect(() => {
+    setTotal(
+      movements.reduce((accumulator, object: Imovements) => {
+        return accumulator + object.value;
+      }, 0)
+    );
+  }, [movements]);
 
   function addMovementhandler() {
     const movement: Imovements = {
@@ -193,41 +204,67 @@ const Movements = () => {
 
   return (
     <>
-      <Stack spacing={2} direction="row">
-        <TextField
-          id="description"
-          label="Descrizione"
-          placeholder="Descrizione"
-          value={description}
-          onChange={handleDescriptionChange}
-          multiline
-        />
-        <TextField
-          id="value"
-          label="Valore"
-          value={value}
-          onChange={handleValueChange}
-          placeholder="Valore"
-          inputProps={{
-            inputMode: 'numeric',
-            pattern: '/^-?d+(?:.d+)?$/g',
-          }}
-          type="number"
-        />
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DesktopDatePicker
-            label="Data"
-            inputFormat="YYYY/MM/DD"
-            value={date}
-            onChange={handleDataPickerChange}
-            renderInput={(params) => <TextField {...params} />}
+      <Grid
+        container
+        spacing={2}
+        direction="row"
+        sx={{ flexGrow: 1 }}
+        justifyContent="center"
+        alignItems="center"
+      >
+        <Grid item xs={8} md={8} justifyContent="flex-end" alignItems="center">
+          <TextField
+            id="description"
+            label="Descrizione"
+            placeholder="Descrizione"
+            value={description}
+            onChange={handleDescriptionChange}
+            multiline
           />
-        </LocalizationProvider>
+          <TextField
+            id="value"
+            label="Valore"
+            value={value}
+            onChange={handleValueChange}
+            placeholder="Valore"
+            inputProps={{
+              inputMode: 'numeric',
+              pattern: '/^-?d+(?:.d+)?$/g',
+            }}
+            type="number"
+          />
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DesktopDatePicker
+              label="Data"
+              inputFormat="YYYY/MM/DD"
+              value={date}
+              onChange={handleDataPickerChange}
+              renderInput={(params) => <TextField {...params} />}
+            />
+          </LocalizationProvider>
 
-        <IconButton aria-label="add" size="large" onClick={addMovementhandler}>
-          <AddIcon fontSize="inherit" />
-        </IconButton>
-      </Stack>
+          <IconButton
+            aria-label="add"
+            size="large"
+            onClick={addMovementhandler}
+          >
+            <AddIcon fontSize="inherit" />
+          </IconButton>
+        </Grid>
+        <Grid item xs={4} md={4}>
+          <Chip
+            color={
+              total < 0
+                ? 'error'
+                : parseInt(nominativeValue) <= total
+                ? 'success'
+                : 'warning'
+            }
+            label={`${nominativeValue} / ${total} €`}
+            style={{ right: 0 }}
+          />
+        </Grid>
+      </Grid>
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
         <TableContainer sx={{ maxHeight: '85vh' }}>
           <Table stickyHeader aria-label="sticky table">

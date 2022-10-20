@@ -9,13 +9,9 @@ interface Imovements {
 interface Iproject {
   id: number;
   name: string;
+  nominative_value: number;
   date: string;
-  total: number;
+  current_value: number;
 }
 
-interface Itype {
-  id: number;
-  name: number;
-}
-
-export { Imovements, Iproject, Itype };
+export { Imovements, Iproject };
