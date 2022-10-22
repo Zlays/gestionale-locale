@@ -23,7 +23,7 @@ function addProject(name: string, nominative_value: number, date: string) {
 function editProject(project: Iproject) {
   return sendAsync(`UPDATE projects
                     SET name = '${project.name}',
-                        nominative_value = '${project.value}',
+                        nominative_value = '${project.nominative_value}',
                         date = '${project.date}'
                     WHERE id = ${project.id}`);
 }
