@@ -38,6 +38,7 @@ import { Column } from '../utils/Interface';
 
 const columns: Column = [
   /* { id: 'id', label: 'Id', minWidth: 170, align: 'left' }, */
+  { id: 'description', label: 'Descrizione', minWidth: 170, align: 'left' },
   { id: 'value', label: 'Valore', minWidth: 170, align: 'left' },
   {
     id: 'date',
@@ -46,7 +47,6 @@ const columns: Column = [
     align: 'left',
     format: (value: string) => moment(value).format('DD/MM/yyyy'),
   },
-  { id: 'description', label: 'Descrizione', minWidth: 170, align: 'left' },
   { id: 'actions', label: 'Azioni', minWidth: 170, align: 'left' },
 ];
 
@@ -61,7 +61,8 @@ const Movements = () => {
   const [error, setError] = React.useState<Error | null>();
 
   const [movements, setMovements] = useState<Imovements[]>([]);
-  const [total, setTotal] = React.useState<number>(0);
+  const [currentTotal, setCurrentTotal] = React.useState<number>(0);
+  const [percent, setPercent] = React.useState<number>(0);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
@@ -93,12 +94,16 @@ const Movements = () => {
   }, [refresh]);
 
   useEffect(() => {
-    setTotal(
+    setCurrentTotal(
       movements.reduce((accumulator, object: Imovements) => {
         return accumulator + object.value;
       }, 0)
     );
   }, [movements]);
+
+  useEffect(() => {
+    setPercent((nominativeValue * currentTotal) / 100);
+  }, [currentTotal]);
 
   function addMovementhandler() {
     const movement: Imovements = {
@@ -161,7 +166,6 @@ const Movements = () => {
   }
 
   function editHandler() {
-    console.log(toEdit);
     editMovements(toEdit)
       .then(() => {
         setRefresh((prevState) => prevState + 1);
@@ -252,17 +256,29 @@ const Movements = () => {
           </IconButton>
         </Grid>
         <Grid item xs={4} md={4}>
-          <Chip
-            color={
-              total < 0
-                ? 'error'
-                : parseInt(nominativeValue) <= total
-                ? 'success'
-                : 'warning'
-            }
-            label={`${nominativeValue} / ${total} €`}
-            style={{ right: 0 }}
-          />
+          <Stack spacing={2} direction="row">
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Valore nominale: ${nominativeValue} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Totale fatturato: ${currentTotal} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Differenza: ${nominativeValue - currentTotal} €`}
+              style={{ right: 0 }}
+            />
+          </Stack>
         </Grid>
       </Grid>
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
@@ -318,7 +334,7 @@ const Movements = () => {
                             style={{
                               color:
                                 column.id === 'value'
-                                  ? value < 0
+                                  ? value <= 0
                                     ? 'red'
                                     : 'green'
                                   : 'black',

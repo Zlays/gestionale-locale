@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { Box, Chip, Grid, IconButton, Modal, TextField } from '@mui/material';
+import {
+  Box,
+  Chip,
+  Grid,
+  IconButton,
+  Modal,
+  Stack,
+  TextField,
+} from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import dayjs, { Dayjs } from 'dayjs';
 import { DesktopDatePicker, LocalizationProvider } from '@mui/x-date-pickers';
@@ -18,6 +26,8 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { Link } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
+import { OverridableStringUnion } from '@mui/types';
+import { ChipPropsColorOverrides } from '@mui/material/Chip/Chip';
 import {
   addProject,
   editProject,
@@ -64,6 +74,8 @@ const Project = () => {
   const [data, setData] = useState<Iproject[]>([]);
   const [nominativeTotal, setNominativeTotal] = React.useState<number>(0);
   const [currentTotal, setCurrentTotal] = React.useState<number>(0);
+  const [percent, setPercent] = React.useState<number>(0);
+
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
@@ -101,6 +113,10 @@ const Project = () => {
       }, 0)
     );
   }, [data]);
+
+  useEffect(() => {
+    setPercent((nominativeTotal * currentTotal) / 100);
+  }, [currentTotal, nominativeTotal]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
     setPage(newPage);
@@ -185,14 +201,17 @@ const Project = () => {
     setNominalValue(event.target.value);
   }
 
-  function handleEditValueChange(event: React.ChangeEvent<HTMLInputElement>) {
+  function handleEditNominativeValueChange(
+    event: React.ChangeEvent<HTMLInputElement>
+  ) {
     setToEdit((prevState: Iproject) => {
       return {
         ...prevState,
-        value: event.target.value,
+        nominative_value: event.target.value,
       };
     });
   }
+
   return (
     <>
       <Grid
@@ -238,17 +257,29 @@ const Project = () => {
           </IconButton>
         </Grid>
         <Grid item xs={4} md={4}>
-          <Chip
-            color={
-              currentTotal < 0
-                ? 'error'
-                : nominativeTotal <= currentTotal
-                ? 'success'
-                : 'warning'
-            }
-            label={`${nominativeTotal} / ${currentTotal} €`}
-            style={{ right: 0 }}
-          />
+          <Stack spacing={2} direction="row">
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Totale nominale: ${nominativeTotal} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Totale fatturato: ${currentTotal} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Differenza: ${nominativeTotal - currentTotal} €`}
+              style={{ right: 0 }}
+            />
+          </Stack>
         </Grid>
       </Grid>
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
@@ -316,8 +347,10 @@ const Project = () => {
                             style={{
                               color:
                                 column.id === 'current_value'
-                                  ? value < row.nominative_value
+                                  ? value <= 0
                                     ? 'red'
+                                    : value < row.nominative_value
+                                    ? 'orange'
                                     : 'green'
                                   : 'black',
                               minWidth: column.minWidth,
@@ -363,10 +396,10 @@ const Project = () => {
           />
           <TextField
             id="value"
-            label="Valore"
-            value={data.nominative_value}
-            onChange={handleEditValueChange}
-            placeholder="Valore"
+            label="Valore nominativo"
+            value={toEdit?.nominative_value}
+            onChange={handleEditNominativeValueChange}
+            placeholder="Valore nominativo"
             inputProps={{
               inputMode: 'numeric',
               pattern: '/^-?d+(?:.d+)?$/g',
