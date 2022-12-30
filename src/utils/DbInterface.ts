@@ -4,13 +4,15 @@ interface Imovements {
   date: string;
   description: string;
   idProject: number;
+  order: number;
 }
 
 interface Iproject {
   id: number;
   name: string;
   nominative_value: number;
-  date: string;
+  start_date: string;
+  end_date: string;
   current_value: number;
 }
 

@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { app } from 'electron';
 import { MIGRATION_PATH } from '../utils/Paths';
 import { database } from './DatabaseService';
 import { sleep } from '../utils/Utils';
@@ -69,7 +68,7 @@ function migrate() {
             if (rows.length <= 0) {
               try {
                 const sqList = fs
-                  .readFileSync(MIGRATION_PATH.concat(`\\${file}`), 'utf8')
+                  .readFileSync(MIGRATION_PATH.concat(`/${file}`), 'utf8')
                   .split(';');
                 console.log(sqList.join(';'));
 
@@ -108,7 +107,7 @@ function migrate() {
 }
 
 function runMigration() {
-  sleep(125)
+  sleep(200)
     .then(() => {
       console.log('[MIGRATION] START');
       initDBMigration()

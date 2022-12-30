@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
   Chip,
@@ -27,19 +27,29 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
 import { modalStyle } from 'utils/style';
 import EditIcon from '@mui/icons-material/Edit';
+import ReactToPrint from 'react-to-print';
 import {
   addMovement,
   editMovements,
   getMovementsByGroup,
+  getProjectById,
   removeMovement,
 } from '../services/ReactDatabaseService';
 import { Imovements, Iproject } from '../utils/DbInterface';
 import { Column } from '../utils/Interface';
+import { formatDate } from '../utils/Utils';
 
 const columns: Column = [
-  /* { id: 'id', label: 'Id', minWidth: 170, align: 'left' }, */
-  { id: 'description', label: 'Descrizione', minWidth: 170, align: 'left' },
-  { id: 'value', label: 'Valore', minWidth: 170, align: 'left' },
+  { id: 'order', label: 'Ordine', minWidth: 100, align: 'left' },
+  {
+    id: 'description',
+    label: 'Descrizione',
+    minWidth: 100,
+    maxWidth: 150,
+    whiteSpace: 'pre-wrap',
+    align: 'left',
+  },
+  { id: 'value', label: 'Valore', minWidth: 100, align: 'left' },
   {
     id: 'date',
     label: 'Date',
@@ -47,11 +57,21 @@ const columns: Column = [
     align: 'left',
     format: (value: string) => moment(value).format('DD/MM/yyyy'),
   },
-  { id: 'actions', label: 'Azioni', minWidth: 170, align: 'left' },
+  { id: 'actions', label: 'Azioni', minWidth: 100, align: 'left' },
 ];
 
 const Movements = () => {
-  const { idProject, nominativeValue } = useParams();
+  const printRef = useRef();
+  const { idProject } = useParams();
+
+  const [project, setProject] = React.useState<Iproject>({
+    id: 0,
+    name: '',
+    nominative_value: 0,
+    current_value: 0,
+    start_date: '',
+    end_date: '',
+  });
 
   const [value, setValue] = React.useState<number>(0);
   const [description, setDescription] = React.useState<string>('');
@@ -61,10 +81,7 @@ const Movements = () => {
   const [error, setError] = React.useState<Error | null>();
 
   const [movements, setMovements] = useState<Imovements[]>([]);
-  const [currentTotal, setCurrentTotal] = React.useState<number>(0);
   const [percent, setPercent] = React.useState<number>(0);
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(50);
 
   const [toEdit, setToEdit] = React.useState<Imovements>({
     date: '',
@@ -72,15 +89,28 @@ const Movements = () => {
     id: null,
     idProject: 0,
     value: 0,
+    order: 0,
   });
   const [modalOpen, setModalOpen] = React.useState(false);
   const handleModalClose = () => setModalOpen(false);
 
   useEffect(() => {
+    getProjectById(idProject)
+      .then((response) => {
+        setProject(response[0]);
+      })
+      .catch((err: Error | null) => setError(err));
+
     getMovementsByGroup(idProject)
       .then((response) => {
         response.sort((a: Imovements, b: Imovements) => {
-          return new Date(b.date) - new Date(a.date);
+          if (a.order < b.order) {
+            return -1;
+          }
+          if (a.order > b.order) {
+            return 1;
+          }
+          return 0;
         });
         setMovements(response);
 
@@ -94,16 +124,8 @@ const Movements = () => {
   }, [refresh]);
 
   useEffect(() => {
-    setCurrentTotal(
-      movements.reduce((accumulator, object: Imovements) => {
-        return accumulator + object.value;
-      }, 0)
-    );
-  }, [movements]);
-
-  useEffect(() => {
-    setPercent((nominativeValue * currentTotal) / 100);
-  }, [currentTotal]);
+    setPercent((project.current_value / project?.nominative_value) * 100);
+  }, [project]);
 
   function addMovementhandler() {
     const movement: Imovements = {
@@ -113,7 +135,7 @@ const Movements = () => {
       description,
       idProject,
     };
-    addMovement(movement)
+    addMovement({ ...movement, order: movements.length + 1 })
       .then(() => {
         setRefresh(refresh + 1);
         setDate(dayjs(new Date()));
@@ -149,23 +171,15 @@ const Movements = () => {
     setDate(newValue);
   }
 
-  const handleChangePage = (event: unknown, newPage: number) => {
-    setPage(newPage);
-  };
-
-  const handleChangeRowsPerPage = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setRowsPerPage(+event.target.value);
-    setPage(0);
-  };
-
   function openEditHandler(id: number) {
     setToEdit(movements[id]);
     setModalOpen(true);
   }
 
   function editHandler() {
+    let orderIsChanged = false;
+    let originalOrder = 0;
+
     editMovements(toEdit)
       .then(() => {
         setRefresh((prevState) => prevState + 1);
@@ -174,6 +188,33 @@ const Movements = () => {
         console.log(`error ${err}`);
         setError(err);
       });
+
+    movements.forEach((mov: Imovements) => {
+      if (toEdit.id === mov.id && toEdit.order !== mov.order) {
+        orderIsChanged = true;
+        originalOrder = mov.order;
+      }
+    });
+
+    if (orderIsChanged) {
+      movements.forEach((mov: Imovements) => {
+        if (
+          toEdit.id !== mov.id &&
+          originalOrder >= mov.order &&
+          toEdit.order <= mov.order
+        ) {
+          mov.order += 1;
+          editMovements(mov)
+            .then(() => {
+              setRefresh((prevState) => prevState + 1);
+            })
+            .catch((err) => {
+              console.log(`error ${err}`);
+              setError(err);
+            });
+        }
+      });
+    }
     setModalOpen(false);
   }
 
@@ -206,17 +247,67 @@ const Movements = () => {
     });
   }
 
+  function handleEditOrderChange(event: React.ChangeEvent<HTMLInputElement>) {
+    setToEdit((prevState: Imovements) => {
+      return {
+        ...prevState,
+        order: event.target.value,
+      };
+    });
+  }
+
   return (
-    <>
+    <div ref={printRef}>
       <Grid
         container
         spacing={2}
         direction="row"
-        sx={{ flexGrow: 1 }}
-        justifyContent="center"
+        sx={{ flexGrow: 1, paddingLeft: '1rem' }}
+        justifyContent="space-between"
         alignItems="center"
       >
-        <Grid item xs={8} md={8} justifyContent="flex-end" alignItems="center">
+        <div>
+          <h2>{`Commessa ${project?.name}`}</h2>
+          <h2>{`Dal ${formatDate(project?.start_date)} al ${formatDate(
+            project?.end_date
+          )}`}</h2>
+        </div>
+        <Grid item>
+          <Stack spacing={2} direction="row">
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Valore nominale: ${project?.nominative_value} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Totale fatturato: ${project?.current_value} €`}
+              style={{ right: 0 }}
+            />
+            <Chip
+              color={
+                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
+              }
+              label={`Rimanenze: ${
+                project?.current_value - project?.nominative_value
+              } €`}
+              style={{ right: 0 }}
+            />
+            <div>
+              <ReactToPrint
+                trigger={() => {
+                  return <a href="#">Stampa!</a>;
+                }}
+                content={() => printRef.current}
+              />
+            </div>
+          </Stack>
+        </Grid>
+        <Grid item justifyContent="flex-end" alignItems="center">
           <TextField
             id="description"
             label="Descrizione"
@@ -255,34 +346,9 @@ const Movements = () => {
             <AddIcon fontSize="inherit" />
           </IconButton>
         </Grid>
-        <Grid item xs={4} md={4}>
-          <Stack spacing={2} direction="row">
-            <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
-              label={`Valore nominale: ${nominativeValue} €`}
-              style={{ right: 0 }}
-            />
-            <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
-              label={`Totale fatturato: ${currentTotal} €`}
-              style={{ right: 0 }}
-            />
-            <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
-              label={`Differenza: ${nominativeValue - currentTotal} €`}
-              style={{ right: 0 }}
-            />
-          </Stack>
-        </Grid>
       </Grid>
       <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-        <TableContainer sx={{ maxHeight: '85vh' }}>
+        <TableContainer>
           <Table stickyHeader aria-label="sticky table">
             <TableHead>
               <TableRow>
@@ -290,7 +356,12 @@ const Movements = () => {
                   <TableCell
                     key={column.id}
                     align={column.align}
-                    style={{ minWidth: column.minWidth }}
+                    style={{
+                      minWidth: column?.minWidth,
+                      maxWidth: column?.maxWidth,
+                      display: column?.display,
+                      whiteSpace: column?.whiteSpace,
+                    }}
                   >
                     {column.label}
                   </TableCell>
@@ -298,73 +369,65 @@ const Movements = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {movements
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((row: Imovements, index: number) => {
-                  return (
-                    <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
-                      {columns.map((column) => {
-                        if (column.id === 'actions') {
-                          return (
-                            <TableCell key={column.id} align={column.align}>
-                              <IconButton
-                                aria-label="edit"
-                                size="large"
-                                onClick={() => openEditHandler(index)}
-                              >
-                                <EditIcon fontSize="inherit" />
-                              </IconButton>
-                              <IconButton
-                                aria-label="delete"
-                                size="large"
-                                onClick={() => removeMovementHandler(row.id)}
-                              >
-                                <DeleteIcon fontSize="inherit" />
-                              </IconButton>
-                            </TableCell>
-                          );
-                        }
-                        const value = column.format
-                          ? column.format(row[column.id])
-                          : row[column.id];
+              {movements.map((row: Imovements, index: number) => {
+                return (
+                  <TableRow hover role="checkbox" tabIndex={-1} key={row.id}>
+                    {columns.map((column) => {
+                      if (column.id === 'actions') {
                         return (
-                          <TableCell
-                            key={column.id}
-                            align={column.align}
-                            style={{
-                              color:
-                                column.id === 'value'
-                                  ? value <= 0
-                                    ? 'red'
-                                    : 'green'
-                                  : 'black',
-                              minWidth: column.minWidth,
-                            }}
-                          >
-                            <Typography
-                              variant="body1"
-                              style={{ whiteSpace: 'pre-line' }}
+                          <TableCell key={column.id} align={column.align}>
+                            <IconButton
+                              aria-label="edit"
+                              size="large"
+                              onClick={() => openEditHandler(index)}
                             >
-                              {column.id === 'value' ? `${value} €` : value}
-                            </Typography>
+                              <EditIcon fontSize="inherit" />
+                            </IconButton>
+                            <IconButton
+                              aria-label="delete"
+                              size="large"
+                              onClick={() => removeMovementHandler(row.id)}
+                            >
+                              <DeleteIcon fontSize="inherit" />
+                            </IconButton>
                           </TableCell>
                         );
-                      })}
-                    </TableRow>
-                  );
-                })}
+                      }
+                      const value = column.format
+                        ? column.format(row[column.id])
+                        : row[column.id];
+                      return (
+                        <TableCell
+                          key={column.id}
+                          align={column.align}
+                          style={{
+                            color:
+                              column.id === 'value'
+                                ? value <= 0
+                                  ? 'red'
+                                  : 'green'
+                                : 'black',
+                            minWidth: column?.minWidth,
+                            maxWidth: column?.maxWidth,
+                            display: column?.display,
+                            whiteSpace: column?.whiteSpace,
+                          }}
+                        >
+                          <Typography
+                            variant="body1"
+                            style={{ whiteSpace: 'pre-line' }}
+                          >
+                            {column.id === 'value' ? `${value} €` : value}
+                          </Typography>
+                        </TableCell>
+                      );
+                    })}
+                  </TableRow>
+                );
+              })}
             </TableBody>
           </Table>
         </TableContainer>
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50, 100]}
-          component="div"
-          count={movements.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleChangeRowsPerPage}
-        />
       </Paper>
       <Modal
         open={modalOpen}
@@ -402,12 +465,29 @@ const Movements = () => {
               renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
-          <IconButton aria-label="add" size="large" onClick={editHandler}>
+          <TextField
+            id="order"
+            label="Ordine"
+            value={toEdit.order}
+            onChange={handleEditOrderChange}
+            placeholder="Ordine"
+            inputProps={{
+              inputMode: 'numeric',
+              pattern: '/^-?d+(?:.d+)?$/g',
+            }}
+            type="number"
+          />
+          <IconButton
+            aria-label="add"
+            size="large"
+            onClick={editHandler}
+            disabled={toEdit.order <= 0 || toEdit.order > movements.length}
+          >
             <SaveAsIcon fontSize="inherit" />
           </IconButton>
         </Box>
       </Modal>
-    </>
+    </div>
   );
 };
 

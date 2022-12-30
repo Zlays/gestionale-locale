@@ -21,10 +21,10 @@ function getDB() {
 
 const database = getDB();
 
-ipcMain.on('asynchronous-message', (event, arg) => {
-  const sql = arg;
+ipcMain.on('db-query', (event, arg) => {
+  const sql = arg[1];
   database.all(sql, (err, rows) => {
-    event.reply('asynchronous-reply', (err && err.message) || rows);
+    event.reply(arg[0], (err && err.message) || rows);
   });
 });
 

@@ -8,24 +8,20 @@ import Movements from '../containers/Movements';
 
 const gridStyles = {
   minWidth: '100vw',
-  minHeight: '100vh',
 };
 
 export default function App() {
   return (
-    <Grid container spacing={2} sx={{ ...gridStyles }} direction="column">
+    <Grid container spacing={1} sx={{ ...gridStyles }} direction="column">
       <MemoryRouter>
-        <Grid item xs={12}>
+        <Grid item>
           <NavBar />
         </Grid>
-        <Grid item xs={12}>
+        <Grid item>
           <Main>
             <Routes>
               <Route path="/" element={<Project />} />
-              <Route
-                path="/movement/:idProject/:nominativeValue"
-                element={<Movements />}
-              />
+              <Route path="/movement/:idProject" element={<Movements />} />
             </Routes>
           </Main>
         </Grid>

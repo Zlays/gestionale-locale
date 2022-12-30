@@ -40,7 +40,8 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
-    "release": "npm run package && electron-builder --win --x64"
+    "release": "npm run package && electron-builder --win --x64",
+    "sonar-scanner": "node_modules/sonar-scanner/bin/sonar-scanner"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -112,10 +113,12 @@
     "electron-debug": "^3.2.0",
     "electron-log": "^4.4.8",
     "electron-updater": "^5.2.3",
+    "fs": "^0.0.1-security",
     "moment": "^2.29.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.3.0"
+    "react-router-dom": "^6.3.0",
+    "react-to-print": "^2.14.10"
   },
   "devDependencies": {
     "@pmmmwh/react-refresh-webpack-plugin": "^0.5.7",
@@ -124,7 +127,7 @@
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^13.3.0",
     "@types/jest": "^28.1.7",
-    "@types/node": "18.7.6",
+    "@types/node": "^18.7.6",
     "@types/react": "^18.0.17",
     "@types/react-dom": "^18.0.6",
     "@types/react-test-renderer": "^18.0.0",
@@ -172,6 +175,7 @@
     "rimraf": "^3.0.2",
     "sass": "^1.54.4",
     "sass-loader": "^13.0.2",
+    "sonar-scanner": "^3.1.0",
     "style-loader": "^3.3.1",
     "terser-webpack-plugin": "^5.3.5",
     "ts-jest": "^28.0.8",

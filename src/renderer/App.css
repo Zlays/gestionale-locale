@@ -1,23 +1,24 @@
 body {
   position: relative;
-  color: white;
-  height: 98vh;
-  width: 98vw;
+  color: black;
+  width: 100vw;
   font-family: sans-serif;
-  overflow-y: hidden;
   display: flex;
   justify-content: flex-start;
   align-items: flex-start;
   background: white;
-  font-size: 18px !important;
+  font-size: 20px !important;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
 .css-1ex1afd-MuiTableCell-root {
-  font-size: 18px !important;
+  font-size: 20px !important;
 }
 
 .MuiChip-root {
-  font-size: 18px !important;
+  font-size: 20px !important;
 }
 
 .MuiButtonBase-root {

@@ -26,8 +26,7 @@ import RemoveRedEyeIcon from '@mui/icons-material/RemoveRedEye';
 import { Link } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
-import { OverridableStringUnion } from '@mui/types';
-import { ChipPropsColorOverrides } from '@mui/material/Chip/Chip';
+import CloseIcon from '@mui/icons-material/Close';
 import {
   addProject,
   editProject,
@@ -54,8 +53,15 @@ const columns: Column = [
     align: 'left',
   },
   {
-    id: 'date',
-    label: 'Date',
+    id: 'start_date',
+    label: 'Data di Inizio',
+    minWidth: 170,
+    align: 'left',
+    format: (value: string) => moment(value).format('DD/MM/yyyy'),
+  },
+  {
+    id: 'end_date',
+    label: 'Data di Fine',
     minWidth: 170,
     align: 'left',
     format: (value: string) => moment(value).format('DD/MM/yyyy'),
@@ -66,7 +72,10 @@ const columns: Column = [
 const Project = () => {
   const [name, setName] = React.useState<string>('');
   const [nominalValue, setNominalValue] = React.useState<number>(0);
-  const [date, setDate] = React.useState<Dayjs | null>(dayjs(new Date()));
+  const [startDate, setStartDate] = React.useState<Dayjs | null>(
+    dayjs(new Date())
+  );
+  const [endDate, setEndDate] = React.useState<Dayjs | null>(dayjs(new Date()));
 
   const [refresh, setRefresh] = React.useState<number>(0);
   const [error, setError] = React.useState<Error | null>();
@@ -81,7 +90,14 @@ const Project = () => {
 
   const [toEdit, setToEdit] = React.useState<Iproject>({});
   const [modalOpen, setModalOpen] = React.useState(false);
-  const handleModalClose = () => setModalOpen(false);
+  const [toDelete, setToDelete] = React.useState<number>(0);
+  const [deleteModalOpen, setdeleteModalOpen] = React.useState(false);
+  const handleModalClose = () => {
+    setToDelete(0);
+    setToEdit({});
+    setModalOpen(false);
+    setdeleteModalOpen(false);
+  };
 
   useEffect(() => {
     getAllProjects()
@@ -115,7 +131,7 @@ const Project = () => {
   }, [data]);
 
   useEffect(() => {
-    setPercent((nominativeTotal * currentTotal) / 100);
+    setPercent((currentTotal / nominativeTotal) * 100);
   }, [currentTotal, nominativeTotal]);
 
   const handleChangePage = (event: unknown, newPage: number) => {
@@ -133,8 +149,12 @@ const Project = () => {
     setName(event.target.value);
   }
 
-  function handleDataPickerChange(newValue: Dayjs | null) {
-    setDate(newValue);
+  function handleStartDatePickerChange(newValue: Dayjs | null) {
+    setStartDate(newValue);
+  }
+
+  function handleEndDatePickerChange(newValue: Dayjs | null) {
+    setEndDate(newValue);
   }
 
   function handleEditNameChange(event: React.ChangeEvent<HTMLInputElement>) {
@@ -146,20 +166,30 @@ const Project = () => {
     });
   }
 
-  function handleEditDataPickerChange(newValue: Dayjs | null) {
+  function handleEditStartDatePickerChange(newValue: Dayjs | null) {
     setToEdit((prevState: Iproject) => {
       return {
         ...prevState,
-        date: newValue.toString(),
+        start_date: newValue.toString(),
+      };
+    });
+  }
+
+  function handleEditEndDatePickerChange(newValue: Dayjs | null) {
+    setToEdit((prevState: Iproject) => {
+      return {
+        ...prevState,
+        end_date: newValue.toString(),
       };
     });
   }
 
   function addProjectHandler() {
-    addProject(name, nominalValue, date.toString())
+    addProject(name, nominalValue, startDate.toString(), endDate.toString())
       .then(() => {
         setRefresh(refresh + 1);
-        setDate(dayjs(new Date()));
+        setStartDate(dayjs(new Date()));
+        setEndDate(dayjs(new Date()));
         setName('');
         setNominalValue(0);
       })
@@ -169,8 +199,13 @@ const Project = () => {
       });
   }
 
-  function removeProjectHandler(id: number) {
-    removeProject(id)
+  function openDeleteHandle(id: number) {
+    setToDelete(id);
+    setdeleteModalOpen(true);
+  }
+
+  function removeProjectHandler() {
+    removeProject(toDelete)
       .then(() => {
         setRefresh(refresh + 1);
       })
@@ -178,6 +213,7 @@ const Project = () => {
         console.log(`error ${err}`);
         setError(err);
       });
+    handleModalClose();
   }
 
   function openEditHandler(id: number) {
@@ -194,7 +230,7 @@ const Project = () => {
         console.log(`error ${err}`);
         setError(err);
       });
-    setModalOpen(false);
+    handleModalClose();
   }
 
   function handleValueChange(event) {
@@ -245,10 +281,17 @@ const Project = () => {
           />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DesktopDatePicker
-              label="Data"
+              label="Data di Inizio"
               inputFormat="YYYY/MM/DD"
-              value={date}
-              onChange={handleDataPickerChange}
+              value={startDate}
+              onChange={handleStartDatePickerChange}
+              renderInput={(params) => <TextField {...params} />}
+            />
+            <DesktopDatePicker
+              label="Data di Fine"
+              inputFormat="YYYY/MM/DD"
+              value={endDate}
+              onChange={handleEndDatePickerChange}
               renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
@@ -276,7 +319,7 @@ const Project = () => {
               color={
                 percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
               }
-              label={`Differenza: ${nominativeTotal - currentTotal} €`}
+              label={`Differenza: ${currentTotal - nominativeTotal} €`}
               style={{ right: 0 }}
             />
           </Stack>
@@ -308,9 +351,7 @@ const Project = () => {
                         if (column.id === 'actions') {
                           return (
                             <TableCell key={column.id} align={column.align}>
-                              <Link
-                                to={`/movement/${row.id}/${row.nominative_value}`}
-                              >
+                              <Link to={`/movement/${row.id}`}>
                                 <IconButton
                                   aria-label="view"
                                   size="large"
@@ -329,7 +370,7 @@ const Project = () => {
                               <IconButton
                                 aria-label="delete"
                                 size="large"
-                                onClick={() => removeProjectHandler(row.id)}
+                                onClick={() => openDeleteHandle(row.id)}
                               >
                                 <DeleteIcon fontSize="inherit" />
                               </IconButton>
@@ -408,16 +449,60 @@ const Project = () => {
           />
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DesktopDatePicker
-              label="Data"
+              label="Data di inizio"
               inputFormat="YYYY/MM/DD"
-              value={toEdit?.date}
-              onChange={handleEditDataPickerChange}
+              value={toEdit?.start_date}
+              onChange={handleEditStartDatePickerChange}
+              renderInput={(params) => <TextField {...params} />}
+            />
+            <DesktopDatePicker
+              label="Data di fine"
+              inputFormat="YYYY/MM/DD"
+              value={toEdit?.end_date}
+              onChange={handleEditEndDatePickerChange}
               renderInput={(params) => <TextField {...params} />}
             />
           </LocalizationProvider>
           <IconButton aria-label="add" size="large" onClick={editHandler}>
             <SaveAsIcon fontSize="inherit" />
           </IconButton>
+        </Box>
+      </Modal>
+      <Modal
+        open={deleteModalOpen}
+        onClose={handleModalClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={modalStyle}>
+          <Grid
+            container
+            spacing={2}
+            direction="row"
+            sx={{ flexGrow: 1, padding: '1rem' }}
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Grid item xs={4} md={4}>
+              <h2>Confermi l'eliminazione del progetto?</h2>
+            </Grid>
+            <Grid item xs={4} md={4}>
+              <IconButton
+                aria-label="add"
+                size="large"
+                onClick={removeProjectHandler}
+              >
+                <DeleteIcon fontSize="inherit" />
+              </IconButton>
+              <IconButton
+                aria-label="add"
+                size="large"
+                onClick={handleModalClose}
+              >
+                <CloseIcon fontSize="inherit" />
+              </IconButton>
+            </Grid>
+          </Grid>
         </Box>
       </Modal>
     </>
