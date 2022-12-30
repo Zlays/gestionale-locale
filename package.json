@@ -40,7 +40,8 @@
     "start:preload": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack --config ./.erb/configs/webpack.config.preload.dev.ts",
     "start:renderer": "cross-env NODE_ENV=development TS_NODE_TRANSPILE_ONLY=true webpack serve --config ./.erb/configs/webpack.config.renderer.dev.ts",
     "test": "jest",
-    "release": "npm run package && electron-builder --win --x64"
+    "release": "npm run package && electron-builder --win --x64",
+    "sonar-scanner": "node_modules/sonar-scanner/bin/sonar-scanner"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -174,6 +175,7 @@
     "rimraf": "^3.0.2",
     "sass": "^1.54.4",
     "sass-loader": "^13.0.2",
+    "sonar-scanner": "^3.1.0",
     "style-loader": "^3.3.1",
     "terser-webpack-plugin": "^5.3.5",
     "ts-jest": "^28.0.8",
