@@ -62,7 +62,6 @@ const installExtensions = async () => {
 };
 
 const createWindow = async () => {
-  console.log(homedir);
   runMigration();
   if (isDebug) {
     await installExtensions();
