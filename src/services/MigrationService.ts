@@ -54,16 +54,13 @@ function addMigration(version: string, status: string) {
 function migrate() {
   return new Promise(function (resolve, reject) {
     fs.readdir(MIGRATION_PATH, function (err, files) {
-      if (err) {
-        if (err) return reject(err);
-      }
+      if (err) return reject(err);
 
       files.forEach(function (file: string, index: number) {
         const version = file.replace('.sql', '');
         database.all(getMigrationSql(version), (err, rows) => {
-          if (err) {
-            if (err) return reject(err);
-          }
+          if (err) return reject(err);
+
           const process = new Promise(function (resolve, reject) {
             if (rows.length <= 0) {
               try {

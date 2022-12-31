@@ -27,6 +27,7 @@ import { Link } from 'react-router-dom';
 import EditIcon from '@mui/icons-material/Edit';
 import SaveAsIcon from '@mui/icons-material/SaveAs';
 import CloseIcon from '@mui/icons-material/Close';
+import { getColorByPercent } from 'utils/Utils';
 import {
   addProject,
   editProject,
@@ -302,23 +303,17 @@ const Project = () => {
         <Grid item xs={4} md={4}>
           <Stack spacing={2} direction="row">
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Totale nominale: ${nominativeTotal} €`}
               style={{ right: 0 }}
             />
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Totale fatturato: ${currentTotal} €`}
               style={{ right: 0 }}
             />
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Differenza: ${currentTotal - nominativeTotal} €`}
               style={{ right: 0 }}
             />
@@ -505,6 +500,7 @@ const Project = () => {
           </Grid>
         </Box>
       </Modal>
+      <span>{error?.message}</span>
     </>
   );
 };

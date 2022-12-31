@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Box,
+  Button,
   Chip,
   Grid,
   IconButton,
@@ -19,7 +20,6 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableContainer from '@mui/material/TableContainer';
 import TableHead from '@mui/material/TableHead';
-import TablePagination from '@mui/material/TablePagination';
 import TableRow from '@mui/material/TableRow';
 import moment from 'moment';
 import { useParams } from 'react-router-dom';
@@ -37,7 +37,7 @@ import {
 } from '../services/ReactDatabaseService';
 import { Imovements, Iproject } from '../utils/DbInterface';
 import { Column } from '../utils/Interface';
-import { formatDate } from '../utils/Utils';
+import { formatDate, getColorByPercent } from '../utils/Utils';
 
 const columns: Column = [
   { id: 'order', label: 'Ordine', minWidth: 100, align: 'left' },
@@ -275,23 +275,17 @@ const Movements = () => {
         <Grid item>
           <Stack spacing={2} direction="row">
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Valore nominale: ${project?.nominative_value} €`}
               style={{ right: 0 }}
             />
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Totale fatturato: ${project?.current_value} €`}
               style={{ right: 0 }}
             />
             <Chip
-              color={
-                percent >= 100 ? 'success' : percent <= 50 ? 'error' : 'warning'
-              }
+              color={getColorByPercent(percent)}
               label={`Rimanenze: ${
                 project?.current_value - project?.nominative_value
               } €`}
@@ -300,7 +294,7 @@ const Movements = () => {
             <div>
               <ReactToPrint
                 trigger={() => {
-                  return <a href="#">Stampa!</a>;
+                  return <Button>Stampa!</Button>;
                 }}
                 content={() => printRef.current}
               />
@@ -487,6 +481,7 @@ const Movements = () => {
           </IconButton>
         </Box>
       </Modal>
+      <span>{error?.message}</span>
     </div>
   );
 };
