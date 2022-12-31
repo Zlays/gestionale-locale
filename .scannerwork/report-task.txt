@@ -1,0 +1,6 @@
+projectKey=gestionale-locale
+serverUrl=http://localhost:9000
+serverVersion=9.8.0.63668
+dashboardUrl=http://localhost:9000/dashboard?id=gestionale-locale
+ceTaskId=AYVl6_IjiQZuvN-Jcvp0
+ceTaskUrl=http://localhost:9000/api/ce/task?id=AYVl6_IjiQZuvN-Jcvp0
