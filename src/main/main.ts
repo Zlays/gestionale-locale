@@ -15,7 +15,7 @@ import log from 'electron-log';
 import MenuBuilder from './menu';
 import { resolveHtmlPath } from './util';
 import runMigration from '../services/MigrationService';
-import { homedir, RESOURCES_PATH } from '../utils/Paths';
+import { RESOURCES_PATH } from '../utils/Paths';
 import { dbClose } from '../services/DatabaseService';
 
 const { name, version } = require('../../release/app/package.json');
